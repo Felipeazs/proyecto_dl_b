@@ -1,5 +1,4 @@
 const mongoose = require('mongoose')
-const validator = require('mongoose-unique-validator')
 
 const usuarioSchema = new mongoose.Schema({
     nombre: {
@@ -13,11 +12,18 @@ const usuarioSchema = new mongoose.Schema({
         unique: true,
         required: true
     },
+    telefono: {
+        type: String,
+    },
     password: {
         type: String,
         required: true,
         minLength: 8
-    }
+    },
+    diagnosticos: [{
+        type: mongoose.Types.ObjectId, required: false, ref: 'Diagnostico'
+    }]
+
 }, { timestamps: true })
 
 
