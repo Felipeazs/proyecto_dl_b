@@ -8,11 +8,13 @@ const getDiagnosticos = async (req, res, next) => {
 
     let diagnostico_encontrado
     try {
-        diagnostico_encontrado = await Diagnostico.find({ usuario: decodedToken.usuarioId }).sort({"createdAt": 0})
+        diagnostico_encontrado = await Diagnostico.find({ usuario: decodedToken.usuarioId }).sort({ "createdAt": -1 })
     } catch (err) {
         res.status(500).json({ error: '500' })
         return next(new Error('Problemas con mongodb'))
     }
+
+    console.log(diagnostico_encontrado)
 
     res.status(200).json({ diagnostico_encontrado })
 
