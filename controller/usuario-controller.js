@@ -11,8 +11,6 @@ const getUsuario = async (req, res, next) => {
 
     let decodedToken = auth_usuario(req)
 
-    console.log('token', decodedToken.usuarioId)
-
     let usuario
 
     try {
@@ -21,8 +19,6 @@ const getUsuario = async (req, res, next) => {
         res.status(500).json({ error: '500' })
         return next(new Error('Problemas con mongodb'))
     }
-
-    console.log('usuario', usuario)
 
     res.status(200).json(usuario)
 
@@ -81,8 +77,6 @@ const loginUsuario = async (req, res, next) => {
         timestamp: usuario_identificado.createdAt,
         token: token
     }
-
-    console.log(usuario)
 
     res.status(200).json(usuario)
 }
@@ -150,8 +144,6 @@ const signupUsuario = async (req, res, next) => {
 }
 
 const actualizarUsuario = async (req, res, next) => {
-    console.log('actualizar usuario')
-
     const { nombre, apellidos, email, telefono } = req.body
 
     let decodedToken = auth_usuario(req)
@@ -185,7 +177,6 @@ const actualizarUsuario = async (req, res, next) => {
 }
 
 const postDiagnostico = async (req, res, next) => {
-    console.log('guardar diagnostico')
     const respuestas = req.body
 
     let { usuarioId } = auth_usuario(req)
