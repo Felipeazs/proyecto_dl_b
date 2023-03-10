@@ -3,9 +3,11 @@ const mongoose = require('mongoose')
 const usuarioSchema = new mongoose.Schema({
     nombre: {
         type: String,
+        default: ''
     },
     apellidos: {
         type: String,
+        default: ''
     },
     email: {
         type: String,
@@ -14,6 +16,7 @@ const usuarioSchema = new mongoose.Schema({
     },
     telefono: {
         type: String,
+        default: ''
     },
     password: {
         type: String,

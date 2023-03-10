@@ -11,13 +11,18 @@ const getUsuario = async (req, res, next) => {
 
     let decodedToken = auth_usuario(req)
 
+    console.log('token', decodedToken.usuarioId)
+
     let usuario
+
     try {
-        usuario = await Usuario.findOne({ id: decodedToken.id }, '-password')
+        usuario = await Usuario.findById(decodedToken.usuarioId, '-password')
     } catch (err) {
         res.status(500).json({ error: '500' })
         return next(new Error('Problemas con mongodb'))
     }
+
+    console.log('usuario', usuario)
 
     res.status(200).json(usuario)
 
@@ -77,6 +82,8 @@ const loginUsuario = async (req, res, next) => {
         token: token
     }
 
+    console.log(usuario)
+
     res.status(200).json(usuario)
 }
 
@@ -108,8 +115,6 @@ const signupUsuario = async (req, res, next) => {
     }
 
     const nuevo_usuario = new Usuario({
-        nombre: '',
-        apellidos: '',
         email: email,
         password: hashed_password
     })
@@ -142,6 +147,41 @@ const signupUsuario = async (req, res, next) => {
     res.status(201).json(usuario)
 
     return
+}
+
+const actualizarUsuario = async (req, res, next) => {
+    console.log('actualizar usuario')
+
+    const { nombre, apellidos, email, telefono } = req.body
+
+    let decodedToken = auth_usuario(req)
+
+    let usuario
+    try {
+        usuario = await Usuario.findOne({ id: decodedToken.id }, '-password')
+    } catch (err) {
+        res.status(500).json({ error: '500' })
+        return next(new Error('Problemas con mongodb'))
+    }
+
+    if (!usuario) {
+        res.status(400).json({ error: '400' })
+        return next(new Error('El usuario no existe'))
+    }
+
+    usuario.nombre = nombre
+    usuario.apellidos = apellidos
+    usuario.email = email
+    usuario.telefono = telefono
+
+    try {
+        await usuario.save()
+    } catch (err) {
+        res.status(500).json({ error: '500' })
+        return next(new Error('Problemas con mongodb'))
+    }
+
+    res.status(200).json({ msg: 'usuario actualizado', usuario: usuario })
 }
 
 const postDiagnostico = async (req, res, next) => {
@@ -177,4 +217,4 @@ const postDiagnostico = async (req, res, next) => {
     res.status(201).json({ results: resultado })
 }
 
-module.exports = { getUsuario, loginUsuario, signupUsuario, postDiagnostico }
+module.exports = { getUsuario, loginUsuario, signupUsuario, actualizarUsuario, postDiagnostico }

@@ -2,7 +2,7 @@ const express = require('express')
 const usuario_router = express.Router()
 const { check } = require('express-validator')
 
-const { getUsuario, loginUsuario, signupUsuario, postDiagnostico } = require('./usuario-controller')
+const { getUsuario, loginUsuario, signupUsuario, actualizarUsuario, postDiagnostico } = require('./usuario-controller')
 
 usuario_router.get('/usuario/:id', getUsuario)
 
@@ -16,6 +16,7 @@ usuario_router.post('/signup', [
     check('password').isLength({ min: 8 }),
     check('password2').isLength({ min: 8 }).custom((value, { req }) => (value === req.body.password))
 ], signupUsuario)
+usuario_router.put('/usuario/:id', actualizarUsuario)
 
 //Diagnosticos
 usuario_router.post('/usuario/:id', postDiagnostico)
