@@ -148,12 +148,14 @@ const actualizarUsuario = async (req, res, next) => {
 
     let decodedToken = auth_usuario(req)
 
+    console.log(decodedToken)
+
     let usuario
     try {
-        usuario = await Usuario.findOne({ id: decodedToken.id }, '-password')
+        usuario = await Usuario.findById(decodedToken.usuarioId, '-password')
     } catch (err) {
         res.status(500).json({ error: '500' })
-        return next(new Error('Problemas con mongodb'))
+        return next(new Error('Problemas con mongodb', err))
     }
 
     if (!usuario) {
@@ -165,6 +167,8 @@ const actualizarUsuario = async (req, res, next) => {
     usuario.apellidos = apellidos
     usuario.email = email
     usuario.telefono = telefono
+
+    console.log(usuario)
 
     try {
         await usuario.save()
