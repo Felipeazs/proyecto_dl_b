@@ -16,6 +16,13 @@ const diagnostico_router = require('./controller/diagnosticos-router')
 app.use('/api', usuario_router)
 app.use('/api', diagnostico_router)
 
+app.use((error, req, res, next) => {
+    if (res.headerSent) {
+        return next(error)
+    }
+    res.status(error.code || 500).json({ message: error.message || 'Un error desconocido ha ocurrido', code: error.code })
+})
+
 app.listen(PORT, async () => {
     console.log(`Servidor conectado al puerto ${PORT}`)
 

@@ -2,22 +2,22 @@ const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { validationResult } = require('express-validator')
-const auth_usuario = require('../utils/auth-usuario')
+const HttpError = require('../middleware/http-error')
 
 const Usuario = require('../db/models/usuario-model')
 const Diagnostico = require('../db/models/diagnostico-model')
 
 const getUsuario = async (req, res, next) => {
 
-    let decodedToken = auth_usuario(req)
+    const { usuarioId } = req.userData
 
     let usuario
 
     try {
-        usuario = await Usuario.findById(decodedToken.usuarioId, '-password')
+        usuario = await Usuario.findById(usuarioId, '-password')
     } catch (err) {
-        res.status(500).json({ error: '500' })
-        return next(new Error('Problemas con mongodb'))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
     res.status(200).json(usuario)
@@ -28,7 +28,7 @@ const loginUsuario = async (req, res, next) => {
     const validationError = validationResult(req)
     if (!validationError.isEmpty()) {
         console.log({ errors: validationError.array() })
-        return res.status(400).json({ error: '400' })
+        return next(new HttpError('Los datos ingresados son inválidos', 422))
     }
 
     const { email, password } = req.body
@@ -37,25 +37,24 @@ const loginUsuario = async (req, res, next) => {
     try {
         usuario_identificado = await Usuario.findOne({ email })
     } catch (err) {
-        res.status(500).json({ error: '500' })
-        return next(new Error('Problemas con mongodb'))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
     if (!usuario_identificado) {
-        res.status(404).json({ error: '404' })
-        return next(new Error('Usuario no encontrado'))
+        return next(new HttpError('El Usuario ingresado no existe', 404))
     }
 
     let is_password_valid = false
     try {
         is_password_valid = await bcrypt.compare(password, usuario_identificado.password)
     } catch (err) {
-        return next(new Error('Problemas con bcrypt'))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
     if (!is_password_valid) {
-        res.status(403).json({ error: '403' })
-        return next(new Error('Credenciales inválidas'))
+        return next(new HttpError('Las credenciales ingresadas son inválidas', 403))
     }
 
     let token
@@ -65,7 +64,8 @@ const loginUsuario = async (req, res, next) => {
             email: usuario_identificado.email
         }, process.env.JWT_SECRET, { expiresIn: '1h' })
     } catch (err) {
-        return next(new Error('Problemas con jwt'))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
     const usuario = {
@@ -85,7 +85,7 @@ const signupUsuario = async (req, res, next) => {
     const validationError = validationResult(req)
     if (!validationError.isEmpty()) {
         console.log({ errors: validationError.array() })
-        return res.status(400).json({ error: '400' })
+        return next(new HttpError('Los datos ingresados son inválidos', 422))
     }
 
     const { email, password } = req.body
@@ -93,19 +93,19 @@ const signupUsuario = async (req, res, next) => {
     try {
         const usuario_identificado = await Usuario.findOne({ email })
         if (usuario_identificado) {
-            return res.status(302).json({ error: '302' })
+            return next(new HttpError('El Usuario ingresado ya existe', 422))
         }
     } catch (err) {
-        res.status(500).json({ error: '500' })
-        return next(new Error('Problemas con mongodb'))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
     let hashed_password
     try {
         hashed_password = await bcrypt.hash(password, 12)
     } catch (err) {
-        res.status(500).json({ error: '500' })
-        return next(new Error('Problemas con bcrypt'))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
     const nuevo_usuario = new Usuario({
@@ -116,16 +116,16 @@ const signupUsuario = async (req, res, next) => {
     try {
         usuario_guardado = await nuevo_usuario.save()
     } catch (err) {
-        res.status(500).json({ error: '500' })
-        return next(new Error('Problemas con mongodb'))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
     let token
     try {
         token = jwt.sign({ usuarioId: usuario_guardado.id, email: usuario_guardado.email }, process.env.JWT_SECRET, { expiresIn: '1h' })
     } catch (err) {
-        res.status(500).json({ error: '500' })
-        return next(new Error('Problemas con jwt'))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
     const usuario = {
@@ -146,21 +146,18 @@ const signupUsuario = async (req, res, next) => {
 const actualizarUsuario = async (req, res, next) => {
     const { nombre, apellidos, email, telefono } = req.body
 
-    let decodedToken = auth_usuario(req)
-
-    console.log(decodedToken)
+    const { usuarioId } = req.userData
 
     let usuario
     try {
-        usuario = await Usuario.findById(decodedToken.usuarioId, '-password')
+        usuario = await Usuario.findById(usuarioId, '-password')
     } catch (err) {
-        res.status(500).json({ error: '500' })
-        return next(new Error('Problemas con mongodb', err))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
     if (!usuario) {
-        res.status(400).json({ error: '400' })
-        return next(new Error('El usuario no existe'))
+        return next(new HttpError('El usuario no existe', 404))
     }
 
     usuario.nombre = nombre
@@ -168,32 +165,32 @@ const actualizarUsuario = async (req, res, next) => {
     usuario.email = email
     usuario.telefono = telefono
 
-    console.log(usuario)
-
     try {
         await usuario.save()
     } catch (err) {
-        res.status(500).json({ error: '500' })
-        return next(new Error('Problemas con mongodb'))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
-    res.status(200).json({ msg: 'usuario actualizado', usuario: usuario })
+    res.status(200).json({ msg: 'Usuario actualizado', usuario: usuario })
 }
 
 const postDiagnostico = async (req, res, next) => {
     const respuestas = req.body
 
-    let { usuarioId } = auth_usuario(req)
+    let { usuarioId } = req.userData
 
     let usuario
     try {
         usuario = await Usuario.findById(usuarioId)
     } catch (err) {
-        res.status(500).json({ error: '500' })
-        return next(new Error('Problemas Encontrando al usuario en mongodb'))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
-    if (!usuario) return
+    if (!usuario) {
+        return next(new HttpError('El usuario no existe', 404))
+    }
 
     let nuevo_diagnostico = new Diagnostico({ ...respuestas, usuario: usuarioId })
 
@@ -206,7 +203,8 @@ const postDiagnostico = async (req, res, next) => {
         await usuario.save({ sesion })
         await sesion.commitTransaction()
     } catch (err) {
-        return next(new Error('Problemas guardando el diagnostico en mongodb', err))
+        console.log(err.message)
+        return next(new HttpError('En este momento tenemos problemas con el servidor, por favor inténtalo más tarde', 500))
     }
 
     res.status(201).json({ results: resultado })

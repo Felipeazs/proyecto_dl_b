@@ -1,10 +1,9 @@
 const express = require('express')
 const usuario_router = express.Router()
 const { check } = require('express-validator')
+const checkAuth = require('../middleware/check-auth')
 
 const { getUsuario, loginUsuario, signupUsuario, actualizarUsuario, postDiagnostico } = require('./usuario-controller')
-
-usuario_router.get('/usuario/:id', getUsuario)
 
 usuario_router.post('/login', [
     check('email').trim().normalizeEmail().isEmail(),
@@ -16,9 +15,11 @@ usuario_router.post('/signup', [
     check('password').isLength({ min: 8 }),
     check('password2').isLength({ min: 8 }).custom((value, { req }) => (value === req.body.password))
 ], signupUsuario)
-usuario_router.put('/usuario/:id', actualizarUsuario)
 
 //Diagnosticos
-usuario_router.post('/usuario/:id', postDiagnostico)
+usuario_router.use(checkAuth)
+usuario_router.put('/usuario', actualizarUsuario)
+usuario_router.post('/usuario', postDiagnostico)
+usuario_router.get('/usuario', getUsuario)
 
 module.exports = usuario_router
